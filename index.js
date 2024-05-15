@@ -31,7 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
     pageIsRendering = true;
     // Get page
     const page = await pdfDoc.getPage(num)
-    const viewport = page.getViewport({scale: 1});
+    const viewport = page.getViewport(1);
     
     // canvas.height = viewport.height < 750 ? viewport.height : 750;
     canvas.height = viewport.height;
