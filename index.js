@@ -102,7 +102,7 @@ canvas.addEventListener('pointerdown', function(event) {
 }, { passive: false }); 
 
 // canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('pointermove', draw);
+canvas.addEventListener('pointermove', _.debounce(draw, 50));
 
 // canvas.addEventListener('mouseup', endDrawing);
 canvas.addEventListener('pointerup', endDrawing);
