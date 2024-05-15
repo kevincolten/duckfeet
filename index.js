@@ -215,7 +215,7 @@ canvas.addEventListener('click', function(event) {
       clickedWords.push(clickedWord.text);
       document.querySelector('#num-clicked').textContent = clickedWords.length;
       
-      document.querySelector('#clicked-words').innerHTML = clickedWords.map(w => `
+      document.querySelector('#clicked-words').innerHTML = clickedWords.toReversed().map(w => `
         <h5><span class="badge text-bg-secondary mx-1" data-word={${w}}>${w}</span></h5>
       `).join('');
       speak(clickedWord.text.toLowerCase());
