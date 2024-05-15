@@ -8,8 +8,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   let pdfDoc = null,
     pageNum = 1,
-    isSelecting = false,
-    isDowning = false,
     selectionStart = {},
     selectionEnd = {},
     pageIsRendering = false,
@@ -17,8 +15,12 @@ window.addEventListener('DOMContentLoaded', () => {
     wordBoxes = [],
     clickedWords = [];
 
+    window.isSelecting = false;
+    window.isDowning = false;
+
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
+  canvas.style.touchAction="none";
   document.getElementById('pdf-renderer').appendChild(canvas);
 
   const pageInfo = document.getElementById('page-info'),
@@ -31,7 +33,7 @@ window.addEventListener('DOMContentLoaded', () => {
     pageIsRendering = true;
     // Get page
     const page = await pdfDoc.getPage(num)
-    const viewport = page.getViewport({ scale: 1, rotation: 360 });
+    const viewport = page.getViewport({ scale: 1, rotation: 360, dontFlip: false });
     
     // canvas.height = viewport.height < 750 ? viewport.height : 750;
     canvas.height = viewport.height;
@@ -95,45 +97,49 @@ function getCoordinates(event) {
   };
 }
 
-// canvas.addEventListener('mousedown', startDrawing);
 canvas.addEventListener('pointerdown', function(event) {
   event.preventDefault(); // Prevent scrolling on touch start
+  if (!window.isSelecting) return;
   startDrawing(event);
 }, { passive: false }); 
 
-// canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('pointermove', _.debounce(draw, 10));
-
-// canvas.addEventListener('mouseup', endDrawing);
 canvas.addEventListener('pointerup', endDrawing);
 
 function startDrawing(event) {
-  if (!isSelecting) return;
+  if (!window.isSelecting) return;
   const coords = getCoordinates(event);
-  isSelecting = true;
-  isDowning = true;
+  window.isSelecting = true;
+  window.isDowning = true;
   selectionStart = { x: coords.x, y: coords.y };
 }
 
 function draw(event) {
-  if (!(isSelecting && isDowning)) return;
+  if (!(window.isSelecting && window.isDowning)) return;
   const coords = getCoordinates(event);
   drawSelection(coords.x, coords.y);
 }
 
 function endDrawing(event) {
-  if (!isSelecting) return;
+  if (!(window.isSelecting && window.isDowning)) return;
+  canvas.removeEventListener('pointermove', draw);
+  window.isSelecting = false;
+  window.isDowning = false;
   const coords = getCoordinates(event);
   selectionEnd = { x: coords.x, y: coords.y };
-  isSelecting = false;
-  isDowning = false;
+
   clearRectangle(); // Clear the rectangle once selection is done
   performOCR();
 }
 
-  startSelectBtn.onclick = function() {
-    isSelecting = true;
-  };
+  startSelectBtn.addEventListener('click', (e) => {
+    window.isSelecting = true;
+    let move = 0;
+    canvas.addEventListener('pointermove', (e) => {
+      if (++move % 15 === 0 && window.isSelecting && window.isDowning) {
+        draw(e)
+      };
+    });
+  });
 
 // Function to draw the selection rectangle
 const drawSelection = async (x, y) => {
@@ -195,6 +201,8 @@ const drawWordBoundingBoxes = (words, offsetX, offsetY) => {
 };
 
 canvas.addEventListener('click', function(event) {
+  event.preventDefault();
+  event.stopPropagation();
   if (!wordBoxes.length) return;
   const clickX = event.offsetX;
   const clickY = event.offsetY;
@@ -209,7 +217,6 @@ canvas.addEventListener('click', function(event) {
   
 
   if (clickedWord) {
-      
       // Display the word or do something else with it
       // alert(`Clicked Word: ${clickedWord.text}`);
       clickedWords.push(clickedWord.text);
