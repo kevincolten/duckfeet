@@ -1,4 +1,4 @@
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   var { pdfjsLib } = globalThis;
 
   // The workerSrc property shall be specified.
@@ -56,10 +56,8 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   // Load PDF
-  pdfjsLib.getDocument(url).promise.then(pdfDoc_ => {
-      pdfDoc = pdfDoc_;
-      renderPage(pageNum);
-  });
+  pdfDoc = await pdfjsLib.getDocument(url).promise;
+  renderPage(pageNum);
 
   btnPrev.addEventListener('click', () => {
     if (pageNum <= 1) {
@@ -159,7 +157,7 @@ const clearRectangle = async () => {
 
 
   // Perform OCR on the selected area
-const performOCR = () => {
+const performOCR = async () => {
   const x = Math.min(selectionStart.x, selectionEnd.x);
   const y = Math.min(selectionStart.y, selectionEnd.y);
   const width = Math.abs(selectionEnd.x - selectionStart.x);
@@ -174,7 +172,7 @@ const performOCR = () => {
   const ocrCtx = ocrCanvas.getContext('2d');
   ocrCtx.putImageData(imageData, 0, 0);
 
-  Tesseract.recognize(
+  let { data: { text, words } } = await Tesseract.recognize(
       ocrCanvas.toDataURL(),
       'eng',
       {
@@ -183,9 +181,8 @@ const performOCR = () => {
             document.querySelector('.progress-bar').style.width = m.progress * 100 + '%'
            } // Log progress
       }
-  ).then(({ data: { text, words } }) => {
-      drawWordBoundingBoxes(words, x, y); // Draw bounding boxes around detected words
-  });
+  )
+  drawWordBoundingBoxes(words, x, y); // Draw bounding boxes around detected words
 };
 
 // Function to draw bounding boxes around detected words
